@@ -190,6 +190,9 @@ const notificationService = {
       });
       await ngoNotification.save();
 
+      // Send email to donor with verification code
+      await emailService.sendFoodClaimedEmail(donor, food, claimer, food.verificationCode);
+
       console.log(`Notified donor ${donor.email} and NGO ${claimer.email} about claimed food`);
     } catch (err) {
       console.error('Error notifying donor about claimed food:', err.message);
