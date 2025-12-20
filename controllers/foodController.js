@@ -80,16 +80,21 @@ exports.claimFood = async (req, res) => {
 exports.verifyPickup = async (req, res) => {
   try {
     const { code } = req.body;
-    const food = await Food.findById(req.params.id);
+    const food = await Food.findById(req.params.id).populate('claimedBy');
     if (!food) return res.status(404).json({ message: 'Not found' });
     if (food.status !== 'Pending') return res.status(400).json({ message: 'Not pending' });
     if (food.verificationCode !== (code || '')) return res.status(400).json({ message: 'Code mismatch' });
+    
     food.status = 'Completed';
     // clear sensitive fields
     food.verificationCode = undefined;
     food.pickupTimerExpiresAt = undefined;
     await food.save();
-    res.json({ food });
+    
+    // Notify NGO about pickup completion
+    await notificationService.notifyPickupCompleted(food, food.claimedBy);
+    
+    res.json({ food, message: 'Pickup verified! Thank you for your donation.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -123,6 +128,21 @@ exports.impact = async (req, res) => {
 exports.getMyDonations = async (req, res) => {
   try {
     const items = await Food.find({ donor: req.user._id })
+      .populate('claimedBy', 'name email phone organizationName address')
+      .sort({ createdAt: -1 })
+      .limit(100);
+    res.json({ items, foods: items });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// NGO fetches their claimed foods (for pickup)
+exports.getMyClaimedFoods = async (req, res) => {
+  try {
+    const items = await Food.find({ claimedBy: req.user._id })
+      .populate('donor', 'name email phone address location')
+      .populate('food')
       .sort({ createdAt: -1 })
       .limit(100);
     res.json({ items, foods: items });

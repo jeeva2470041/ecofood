@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const emailService = require('./emailService');
 
 /**
  * Notification Service
@@ -37,7 +38,10 @@ const notificationService = {
         }
       });
 
-      // Create notifications for each nearby NGO
+      // Get donor info for email
+      const donor = await User.findById(food.donor);
+
+      // Create in-app notifications and send emails
       const notifications = nearbyNGOs.map(ngo => ({
         ngoId: ngo._id,
         foodId: food._id,
@@ -51,6 +55,12 @@ const notificationService = {
 
       if (notifications.length > 0) {
         await Notification.insertMany(notifications);
+        
+        // Send emails to nearby NGOs
+        for (const ngo of nearbyNGOs) {
+          await emailService.sendFoodPostedEmail(ngo, food, donor);
+        }
+        
         console.log(`Notified ${notifications.length} nearby NGOs about food: ${food.name}`);
       }
     } catch (err) {
@@ -162,11 +172,15 @@ const notificationService = {
         donorId: claimer._id,
         type: 'food_claimed',
         title: 'Your food has been claimed!',
-        message: `${claimer.name} has claimed your ${food.name}. Verification code: ${food.verificationCode}`,
+        message: `${claimer.name || claimer.organizationName} has claimed your ${food.name}. Verification code will be sent via email.`,
         read: false
       });
 
       await notification.save();
+      
+      // Send email to donor with verification code
+      await emailService.sendFoodClaimedEmail(donor, food, claimer, food.verificationCode);
+      
       console.log(`Notified donor ${donor.email} about claimed food`);
     } catch (err) {
       console.error('Error notifying donor about claimed food:', err.message);
@@ -212,6 +226,20 @@ const notificationService = {
       }
     } catch (err) {
       console.error('Error notifying about expiring food:', err.message);
+    }
+  },
+
+  /**
+   * Notify NGO about pickup completion
+   */
+  notifyPickupCompleted: async (food, ngo) => {
+    try {
+      // Send email to NGO
+      await emailService.sendPickupCompletedEmail(ngo, food, await User.findById(food.donor));
+      
+      console.log(`Notified NGO ${ngo.email} about pickup completion`);
+    } catch (err) {
+      console.error('Error notifying NGO about pickup completion:', err.message);
     }
   }
 };

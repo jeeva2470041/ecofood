@@ -8,7 +8,8 @@ const {
   claimFood,
   verifyPickup,
   impact,
-  getMyDonations
+  getMyDonations,
+  getMyClaimedFoods
 } = require('../controllers/foodController');
 
 // Donor posts
@@ -16,6 +17,9 @@ router.post('/', protect, authorize('donor'), postFood);
 
 // Donor fetches their own donations
 router.get('/my-donations', protect, authorize('donor'), getMyDonations);
+
+// NGO fetches their claimed foods
+router.get('/my-claims', protect, authorize('ngo'), getMyClaimedFoods);
 
 // NGOs fetch nearby available
 router.get('/nearby', protect, authorize('ngo'), listNearby);
@@ -27,7 +31,7 @@ router.get('/available', protect, authorize('ngo'), listAvailable);
 router.post('/:id/claim', protect, authorize('ngo'), claimFood);
 
 // Donor verifies pickup
-router.post('/:id/verify', protect, authorize('donor'), verifyPickup);
+router.post('/:id/verify-pickup', protect, authorize('donor'), verifyPickup);
 
 // Impact dashboard
 router.get('/impact/stats', protect, impact);
