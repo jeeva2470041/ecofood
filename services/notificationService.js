@@ -55,12 +55,12 @@ const notificationService = {
 
       if (notifications.length > 0) {
         await Notification.insertMany(notifications);
-        
+
         // Send emails to nearby NGOs
         for (const ngo of nearbyNGOs) {
           await emailService.sendFoodPostedEmail(ngo, food, donor);
         }
-        
+
         console.log(`Notified ${notifications.length} nearby NGOs about food: ${food.name}`);
       }
     } catch (err) {
@@ -177,10 +177,10 @@ const notificationService = {
       });
 
       await notification.save();
-      
+
       // Send email to donor with verification code
       await emailService.sendFoodClaimedEmail(donor, food, claimer, food.verificationCode);
-      
+
       console.log(`Notified donor ${donor.email} about claimed food`);
     } catch (err) {
       console.error('Error notifying donor about claimed food:', err.message);
@@ -230,16 +230,44 @@ const notificationService = {
   },
 
   /**
-   * Notify NGO about pickup completion
+   * Notify NGO and Donor about pickup completion
    */
   notifyPickupCompleted: async (food, ngo) => {
     try {
-      // Send email to NGO
-      await emailService.sendPickupCompletedEmail(ngo, food, await User.findById(food.donor));
-      
-      console.log(`Notified NGO ${ngo.email} about pickup completion`);
+      const donor = await User.findById(food.donor);
+
+      // 1. Create notification for Donor
+      if (donor) {
+        const donorNotification = new Notification({
+          ngoId: donor._id, // Recipient
+          foodId: food._id,
+          donorId: ngo._id, // Sender (NGO)
+          type: 'pickup_reminder', // Reuse existing enum or we could add 'pickup_completed'
+          title: 'Pickup Completed! ✅',
+          message: `Your donation of ${food.name} has been successfully picked up by ${ngo.organizationName || ngo.name}.`,
+          read: false
+        });
+        await donorNotification.save();
+      }
+
+      // 2. Create notification for NGO
+      const ngoNotification = new Notification({
+        ngoId: ngo._id,
+        foodId: food._id,
+        donorId: food.donor,
+        type: 'pickup_reminder',
+        title: 'Success! Pickup Verified',
+        message: `You have successfully completed the pickup for ${food.name}.`,
+        read: false
+      });
+      await ngoNotification.save();
+
+      // 3. Send emails
+      if (ngo.email) await emailService.sendPickupCompletedEmail(ngo, food, donor);
+
+      console.log(`Created pickup completion notifications for donor and NGO`);
     } catch (err) {
-      console.error('Error notifying NGO about pickup completion:', err.message);
+      console.error('Error notifying about pickup completion:', err.message);
     }
   }
 };

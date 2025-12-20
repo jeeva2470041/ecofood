@@ -10,8 +10,8 @@ const {
   deleteAllNotifications
 } = require('../controllers/notificationController');
 
-// All routes require NGO authentication
-router.use(protect, authorize('ngo'));
+// All routes require authentication (NGO or Donor)
+router.use(protect, authorize('ngo', 'donor'));
 
 // Get all notifications
 router.get('/', getNotifications);
