@@ -178,10 +178,19 @@ const notificationService = {
 
       await notification.save();
 
-      // Send email to donor with verification code
-      await emailService.sendFoodClaimedEmail(donor, food, claimer, food.verificationCode);
+      // In-app notification for NGO (The claimer)
+      const ngoNotification = new Notification({
+        ngoId: claimer._id,
+        foodId: food._id,
+        donorId: food.donor,
+        type: 'pickup_reminder',
+        title: 'Food Claimed Successfully!',
+        message: `You claimed ${food.name}. Your verification code is: ${food.verificationCode}. Show this to the donor during pickup.`,
+        read: false
+      });
+      await ngoNotification.save();
 
-      console.log(`Notified donor ${donor.email} about claimed food`);
+      console.log(`Notified donor ${donor.email} and NGO ${claimer.email} about claimed food`);
     } catch (err) {
       console.error('Error notifying donor about claimed food:', err.message);
     }
