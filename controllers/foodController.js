@@ -20,10 +20,12 @@ exports.postFood = async (req, res) => {
       status: 'Available'
     });
     await food.save();
-    
-    // Notify nearby NGOs
-    await notificationService.notifyNearbyNGOs(food, 10);
-    
+
+    // Notify nearby NGOs (Fire and forget to prevent UI blocking)
+    notificationService.notifyNearbyNGOs(food, 10).catch(err =>
+      console.error('Background notification error:', err)
+    );
+
     res.json({ food });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -57,7 +59,7 @@ exports.claimFood = async (req, res) => {
     const food = await Food.findById(req.params.id);
     if (!food) return res.status(404).json({ message: 'Food not found' });
     if (food.status !== 'Available') return res.status(400).json({ message: 'Food is no longer available' });
-    
+
     // set to pending and assign
     food.status = 'Pending';
     food.claimedBy = req.user._id;
@@ -66,10 +68,10 @@ exports.claimFood = async (req, res) => {
     // pickup timer: 2 hours default
     food.pickupTimerExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
     await food.save();
-    
+
     // Notify donor
     await notificationService.notifyFoodClaimed(food, req.user);
-    
+
     res.json({ food });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -84,16 +86,16 @@ exports.verifyPickup = async (req, res) => {
     if (!food) return res.status(404).json({ message: 'Not found' });
     if (food.status !== 'Pending') return res.status(400).json({ message: 'Not pending' });
     if (food.verificationCode !== (code || '')) return res.status(400).json({ message: 'Code mismatch' });
-    
+
     food.status = 'Completed';
     // clear sensitive fields
     food.verificationCode = undefined;
     food.pickupTimerExpiresAt = undefined;
     await food.save();
-    
+
     // Notify NGO about pickup completion
     await notificationService.notifyPickupCompleted(food, food.claimedBy);
-    
+
     res.json({ food, message: 'Pickup verified! Thank you for your donation.' });
   } catch (err) {
     res.status(500).json({ message: err.message });

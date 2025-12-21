@@ -22,6 +22,8 @@ const notificationService = {
 
       const maxDistance = radiusKm * 1000; // Convert to meters
 
+      console.log(`Searching for NGOs within ${maxDistance}m of ${food.location.coordinates}...`);
+
       // Find NGOs within radius
       const nearbyNGOs = await User.find({
         role: 'ngo',
@@ -38,6 +40,8 @@ const notificationService = {
         }
       });
 
+      console.log(`Found ${nearbyNGOs.length} nearby NGOs.`);
+
       // Get donor info for email
       const donor = await User.findById(food.donor);
 
@@ -48,7 +52,7 @@ const notificationService = {
         donorId: food.donor,
         type: 'food_posted',
         title: `New food available: ${food.name}`,
-        message: `${food.quantity} of ${food.name} (${food.type}) posted nearby. Expires at ${new Date(food.expiryAt).toLocaleString()}`,
+        message: `${food.quantity} of ${food.name} (${food.type}) posted nearby.`,
         read: false,
         createdAt: new Date()
       }));
@@ -56,10 +60,10 @@ const notificationService = {
       if (notifications.length > 0) {
         await Notification.insertMany(notifications);
 
-        // Send emails to nearby NGOs
-        for (const ngo of nearbyNGOs) {
-          await emailService.sendFoodPostedEmail(ngo, food, donor);
-        }
+        // Send emails to nearby NGOs - use fire and forget to not slow down
+        nearbyNGOs.forEach(ngo => {
+          emailService.sendFoodPostedEmail(ngo, food, donor).catch(e => console.error('Email failed:', e.message));
+        });
 
         console.log(`Notified ${notifications.length} nearby NGOs about food: ${food.name}`);
       }
