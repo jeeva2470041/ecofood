@@ -1,34 +1,39 @@
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-dotenv.config();
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ecofood';
   try {
-    await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log('MongoDB connected');
-    
-    // Create geospatial indexes for location-based queries
-    const User = require('../models/User');
-    const Food = require('../models/Food');
-    
-    try {
-      // Create 2dsphere indexes for geospatial queries
-      await User.collection.createIndex({ 'location': '2dsphere' });
-      console.log('✓ User location 2dsphere index created');
-      
-      await Food.collection.createIndex({ 'location': '2dsphere' });
-      console.log('✓ Food location 2dsphere index created');
-      
-      // Create TTL index for notifications auto-cleanup
-      const Notification = require('../models/Notification');
-      await Notification.collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 604800 });
-      console.log('✓ Notification TTL index created (7 days)');
-    } catch (indexErr) {
-      console.log('Note: Some indexes may already exist:', indexErr.message);
+    // Use MongoDB Atlas URI ONLY
+    const uri = process.env.MONGO_URI;
+
+    if (!uri) {
+      throw new Error("MONGO_URI is not defined in .env file");
     }
+
+    await mongoose.connect(uri);
+    console.log("✅ MongoDB Atlas connected");
+
+    // Load models AFTER connection
+    const User = require("../models/User");
+    const Food = require("../models/Food");
+    const Notification = require("../models/Notification");
+
+    // Create geospatial indexes
+    await User.collection.createIndex({ location: "2dsphere" });
+    console.log("✓ User location 2dsphere index ready");
+
+    await Food.collection.createIndex({ location: "2dsphere" });
+    console.log("✓ Food location 2dsphere index ready");
+
+    // TTL index for notifications (7 days)
+    await Notification.collection.createIndex(
+      { createdAt: 1 },
+      { expireAfterSeconds: 604800 }
+    );
+    console.log("✓ Notification TTL index ready (7 days)");
+
   } catch (err) {
-    console.error('MongoDB connection error', err);
+    console.error("❌ MongoDB connection error:", err.message);
     process.exit(1);
   }
 };
