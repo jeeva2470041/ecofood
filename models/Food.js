@@ -6,6 +6,9 @@ const FoodSchema = new mongoose.Schema({
   type: { type: String, enum: ['Veg', 'Non-Veg'], required: true },
   quantity: { type: String, required: true },
   expiryAt: { type: Date, required: true },
+  description: { type: String },
+  storageTips: { type: String },
+  allergens: { type: String },
   image: { type: String },
   location: {
     type: { type: String, enum: ['Point'], required: true },

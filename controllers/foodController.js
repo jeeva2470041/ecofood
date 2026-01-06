@@ -5,7 +5,7 @@ const notificationService = require('../services/notificationService');
 // Donor posts a food donation
 exports.postFood = async (req, res) => {
   try {
-    const { name, type, quantity, expiryAt, latitude, longitude } = req.body;
+    const { name, type, quantity, expiryAt, latitude, longitude, description, storageTips, allergens } = req.body;
     if (!name || !type || !quantity || !expiryAt || !latitude || !longitude) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -15,6 +15,9 @@ exports.postFood = async (req, res) => {
       type,
       quantity,
       expiryAt: new Date(expiryAt),
+      description,
+      storageTips,
+      allergens,
       image: req.body.image || null,
       location: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
       status: 'Available'

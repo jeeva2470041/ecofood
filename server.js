@@ -2,9 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 
-dotenv.config();
+// Load backend-specific .env no matter the current working directory
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 connectDB();
 
 const app = express();
@@ -17,6 +19,8 @@ app.use('/api/foods', require('./routes/food'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/chat', require('./routes/chat'));
 
 app.get('/', (req, res) => res.send('EcoFood API is running'));
 
