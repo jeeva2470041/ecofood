@@ -14,3 +14,20 @@ API endpoints (high level):
 - POST `/api/foods/:id/claim` - NGO claims
 - POST `/api/foods/:id/verify` - donor verifies pickup
 - GET `/api/foods/impact/stats` - impact dashboard
+
+---
+
+Docker (quick):
+
+- Build and run (single command):
+
+  ```bash
+  docker compose up --build
+  ```
+
+- Notes:
+  - Backend expects a local `backend/.env` (copy `backend/.env.example`). **Do not commit** `.env` files.
+  - Mongo is provided by the `mongo` service in `docker-compose.yml`.
+  - For frontend in production we use an Nginx image to serve the built assets.
+
+See the repository `docker-compose.yml` at the repo root for service configs.
