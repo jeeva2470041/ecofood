@@ -23,7 +23,10 @@ const UserSchema = new mongoose.Schema({
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], default: [0, 0] }
   },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  // Password Reset OTP
+  resetOTP: { type: String },
+  resetOTPExpiry: { type: Date }
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {
